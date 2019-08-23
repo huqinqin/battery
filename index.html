@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        canvas{
+            background-color: #0099cc;
+        }
+        #score{
+            position: fixed;
+            left: 50px;
+            top: 20px;
+            color: white;
+            font-size: 50px;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body onload="onLoad();">
+   <canvas id="cvs" height="800" width="1000" style="border: 1px solid black"></canvas>
+   <div id="score">score: <span>0</span></div>
+   <script>
+       var cvs = document.getElementById('cvs');
+       var ctx = cvs.getContext('2d');
+       var score = document.getElementById('score');
+       var span = score.getElementsByTagName('span')[0];
+       var gGame = null;
+       function onLoad() {
+          gGame = new Game();
+          gGame.render();
+          gGame.update();
+       }
+       function Game() {
+          var _this = this;
+          this.frame = 0;
+          this.lastFrame = 0;
+          this.CDCode = 60;
+           this.frame1 = 0;
+           this.lastFrame1 = 0;
+           this.CDCode1 = 60;
+          this.bar = null;
+          this.bulltes = [];
+          this.enemies = [];
+          this.score = 0;
+          document.onkeydown = function (e) {
+              if(e.keyCode == 13){
+                  if(_this.frame >= _this.lastFrame + _this.CDCode) {
+                      _this.bulltes.push(new Bullet(_this.bar.angle));
+                      _this.lastFrame = _this.frame;
+                  }
+              }
+          };
+          this.render = function () {
+              _this.bar = new Bar();
+          };
+          this.update = function () {
+              _this.frame++;
+              _this.frame1++;
+              ctx.clearRect(0,0,cvs.width,cvs.height);
+              /*画炮台*/
+              _this.bar.draw();
+              /*画敌人*/
+              if(_this.frame1 >= _this.lastFrame1 + _this.CDCode1) {
+                  _this.enemies.push(new Enemy());
+                  _this.lastFrame1 = _this.frame1;
+              }
+              _this.enemies.forEach(function (val) {
+                  _this.bulltes.forEach(function (item) {
+                      var dx = item.positionX - val.positionX;
+                      var dy = item.positionY - val.positionY;
+                      if(Math.sqrt(dy * dy + dx * dx) <= 40){
+                          val.dead = true;
+                          _this.score++;
+                          span.innerHTML = _this.score
+                      }
+                  })
+              });
+              _this.enemies.forEach(function (val,index) {
+                  val.draw();
+                  val.updatePos();
+                  val.updateStatus();
+                  if(val.dead){
+                      _this.enemies.splice(index,1)
+                  }
+              });
+              _this.bulltes.forEach(function (val,index) {
+                  val.draw();
+                  val.updatePos();
+                  val.updateStatus();
+                  if(val.dead){
+                      _this.bulltes.splice(index,1)
+                  }
+              });
+              window.requestAnimationFrame(_this.update)
+          }
+       }
+       function Bar() {
+           var _this = this;
+           this.angle = 0;
+           this.draw = function () {
+               ctx.save();
+               ctx.beginPath();
+               ctx.fillStyle = 'green';
+               ctx.arc(cvs.width/2, cvs.height,100,0, Math.PI * 2);
+               ctx.fill();
+               ctx.beginPath();
+               ctx.translate(cvs.width / 2,cvs.height);
+               ctx.rotate(_this.angle);
+               ctx.strokeStyle = 'green';
+               ctx.lineWidth = 2;
+               ctx.moveTo(0,0);
+               ctx.lineTo(150,0);
+               ctx.stroke();
+               ctx.restore();
+           };
+           /*this.update = function () {
+               ctx.clearRect(0,0,cvs.width,cvs.height);
+               _this.draw();
+               window.requestAnimationFrame(_this.update);
+           };*/
+           cvs.onclick = function (e) {
+               _this.angle = Math.atan2(e.pageY - cvs.height,e.pageX - cvs.width / 2);
+           };
+       }
+       function Bullet(angle) {
+           var _this = this;
+           this.positionX = cvs.width / 2 + 150 * Math.cos(angle);
+           this.positionY = cvs.height + 150 * Math.sin(angle);
+           this.v = 2;
+           this.dead = false;
+           this.draw = function () {
+               ctx.beginPath();
+               ctx.fillStyle = 'red';
+               ctx.arc(_this.positionX,_this.positionY,20,0,Math.PI * 2);
+               ctx.fill();
+           };
+           this.updatePos = function () {
+               var dt = 1;
+               _this.positionX += _this.v * dt * Math.cos(angle);
+               _this.positionY += _this.v * dt * Math.sin(angle);
+           };
+           this.updateStatus = function () {
+               if(_this.positionX >= cvs.width - 40 || _this.positionX < 0 || _this.positionY >= cvs.height - 40 || _this.positionY < 0){
+                   _this.dead = true;
+               }
+           }
+       }
+       function Enemy() {
+           var _this = this;
+           this.dead = false;
+           this.positionX = Math.random() * cvs.width;
+           this.positionY = Math.random() * 200 + 100;
+           this.angle = parseInt(Math.random() * 180);
+           this.v = 2;
+           this.draw = function () {
+               ctx.beginPath();
+               ctx.fillStyle = 'blue';
+               ctx.arc(_this.positionX,_this.positionY,20,0,Math.PI * 2);
+               ctx.fill();
+           };
+           this.updatePos = function () {
+               var dt = 1;
+               _this.positionX += _this.v * dt * Math.cos(Math.PI / 180 * _this.angle);
+               _this.positionY += _this.v * dt * Math.sin(Math.PI / 180 * _this.angle);
+           };
+           this.updateStatus = function () {
+               if(_this.positionX >= cvs.width - 40 || _this.positionX < 0 || _this.positionY >= cvs.height - 40 || _this.positionY < 0){
+                   _this.dead = true;
+               }
+           }
+       }
+   </script>
+</body>
+</html>
